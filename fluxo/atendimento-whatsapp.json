@@ -1,0 +1,1171 @@
+{
+  "name": "Atendimento de vendas no WhatsApp com IA",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURAÇÃO INICIAL\n\n### 1. 🟢 Evolution API — WhatsApp\n- URL do servidor · API Key da instância\n> n8n → Credentials → **Evolution API**\n\n---\n\n### 2. ⚡ Groq — IA (GRÁTIS)\n- Chave em console.groq.com → API Keys → Create API Key\n- Modelo: **Llama 3.3 70B Versatile** (llama-3.3-70b-versatile)\n> n8n → Credentials → **Groq API**\n- Custo: **GRÁTIS** (limite de 30 req/min — mais que suficiente)\n- Rápido pra caramba (5x Gemini)\n\n---\n\n### 3. 🔴 Redis — Memória\n- Host · Porta 6379 · Senha\n> n8n → Credentials → **Redis**\n\n---\n\n### 4. 🟡 Google Sheets — Leads + Pesquisa\n- Conta Google OAuth\n- Aba **Leads**: Data · Nome · Cidade · Negócio · Produto · Volume · WhatsApp\n- Aba **Pesquisa**: Data · Nome · WhatsApp · Nota · Comentario\n- Substituir ID da planilha nos nós **Salvar Lead** e **Salvar Pesquisa**\n\n---\n\n### 5. 🔔 Admin WhatsApp\n**Nó Notificar Admin:** substituir `NUMERO_ADMIN@s.whatsapp.net`\n\n---\n\n### 6. 📸 IDs das imagens no Google Drive\n**Nó Processar Saída AI — editar o código JS** com os IDs reais.\n\n---\n\n### 7. 🌐 Evolution API — Envio de imagens\n**Nó Enviar Imagem Catálogo:** credenciais Evolution já configuradas.\n\n---\n\n### 8. 📋 NOVO — Pesquisa de Satisfação + Handoff\n- IA dispara `[PESQUISA]` quando a conversa está terminando.\n- O workflow anexa automaticamente a mensagem com notas 1-5 + opção *ATENDENTE*.\n- IA detecta a nota e retorna `[AVALIACAO:N]` → salvo na aba **Pesquisa**.\n- Se cliente digitar *ATENDENTE*, IA já dispara `[TRANSFERIR]` (handoff existente).",
+        "height": 1200,
+        "width": 580,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -7248,
+        9200
+      ],
+      "id": "6f1f5ffa-39a6-4cf4-90aa-562f67f6344d",
+      "name": "Sticky Note CONFIG1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "troque-por-um-caminho-aleatorio",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -7040,
+        8992
+      ],
+      "id": "fa4c1cb8-e350-426c-aec8-b26b78ba0c95",
+      "name": "Webhook",
+      "webhookId": "5a571439-d52d-49af-81a5-b8d507a31af0",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Webhook Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aca17013-ee41-4de0-a805-d4c3e4bcacfb",
+              "name": "From",
+              "value": "={{ $json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "571a649e-5d70-4e82-beb5-fdf0449ff10b",
+              "name": "Instance",
+              "value": "={{ $json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "6b7846eb-05de-49b5-b5df-90cefa0fe3f4",
+              "name": "Mensagem",
+              "value": "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "de17c2c1-9db5-4c08-bcc0-190b5057c262",
+              "name": "MensagemID",
+              "value": "={{ $json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "b2b1cf17-b989-4f29-b867-ad50e46e5417",
+              "name": "NomePessoa",
+              "value": "={{ $json.body.data.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+              "name": "fromMe",
+              "value": "={{ $json.body.data.key.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a1b2c3d4-e5f6-7890-abcd-123456789012",
+              "name": "TipoMensagem",
+              "value": "={{ $json.body.data.message?.conversation ? 'text' : $json.body.data.message?.extendedTextMessage ? 'text' : $json.body.data.message?.imageMessage ? 'image' : $json.body.data.message?.audioMessage ? 'audio' : $json.body.data.message?.videoMessage ? 'video' : $json.body.data.message?.documentMessage ? 'document' : $json.body.data.message?.stickerMessage ? 'sticker' : 'unknown' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -6832,
+        8992
+      ],
+      "id": "b9ef3635-6045-454b-becf-e12454bcf7ec",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "f1111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ !$json.fromMe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            },
+            {
+              "id": "f2222222-2222-2222-2222-222222222222",
+              "leftValue": "={{ $json.From }}",
+              "rightValue": "@g.us",
+              "operator": {
+                "type": "string",
+                "operation": "notContains",
+                "name": "filter.operator.notContains"
+              }
+            },
+            {
+              "id": "f3333333-3333-3333-3333-333333333333",
+              "leftValue": "={{ $json.From }}",
+              "rightValue": "status@broadcast",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals",
+                "name": "filter.operator.notEquals"
+              }
+            },
+            {
+              "id": "f4444444-4444-4444-4444-444444444444",
+              "leftValue": "={{ $json.Mensagem !== '' || $json.TipoMensagem !== 'unknown' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            },
+            {
+              "id": "9733644e-ab02-4dae-8ab4-43f87bfe590c",
+              "leftValue": "={{ $json.Instance }}",
+              "rightValue": "SUA_INSTANCIA",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "c63a8436-7469-4091-bc7c-e75790c9bc31",
+              "leftValue": "={{ /^\\d{10,15}@s\\.whatsapp\\.net$/.test($json.From) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -6576,
+        8992
+      ],
+      "id": "e7c86e16-abd8-423f-b21b-397be2d165df",
+      "name": "IF Filtrar1"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "read-messages",
+        "instanceName": "={{ $json.Instance }}",
+        "remoteJid": "={{ $json.From }}",
+        "messageId": "={{ $json.MensagemID }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -6352,
+        8992
+      ],
+      "id": "9a306d42-6884-4edc-9dc1-9d0f898d0cc7",
+      "name": "Marcar mensagens como lidas1",
+      "credentials": {
+        "evolutionApi": {
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "t1111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ $('Edit Fields1').item.json.TipoMensagem }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -6128,
+        8992
+      ],
+      "id": "88542b13-fcdf-4c2b-be3f-9407c23cbbb1",
+      "name": "IF Tipo Mensagem1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Edit Fields1').item.json.Mensagem }}",
+        "options": {
+          "systemMessage": "=Você é a Tati, atendente da Loja Exemplo, especializada em cascalho — a linha de maior volume da empresa. Atende pelo WhatsApp de forma humana, natural e profissional.\n\n## SOBRE A EMPRESA\n- Nome: Loja Exemplo\n- Endereço: [ENDEREÇO DA EMPRESA]\n- Telefone: [TELEFONE]\n- E-mail: [E-MAIL]\n- Horário: Segunda a sexta, das 8h às 17h\n- Site: [SITE]\n\n## LINHA DE CASCALHO (foco principal)\nA Loja Exemplo é referência em cascalho para bijuterias e artesanato. Destaques:\n1. Cascalho 24 Madre Pérola Marrom (cascalho_madre_marrom_24)\n2. Cascalho Dente de Madre Pérola Marrom (cascalho_dente_madre_marrom)\n3. Cascalho Dente de Madre Pérola Natural (cascalho_dente_madre_natural)\n4. Cascalho Madre Pérola Concha (cascalho_madre_concha)\n5. Cascalho Ônix Preto (cascalho_onix_preto)\nAlém desses, há dezenas de outros cascalhos em várias cores — o cliente pode pedir por cor (ver Regra 3).\n\n## TOM DE VOZ (muito importante)\n- Soe como uma atendente real: atenciosa, objetiva e profissional. Nem robótica, nem exageradamente animada.\n- Mensagens curtas e diretas (1 a 3 linhas), como se digita no WhatsApp. Sem listas longas, sem markdown enfeitado, sem textos compridos.\n- EMOJIS: use muito pouco. No máximo UM emoji discreto por mensagem, e só quando realmente couber. Na maioria das mensagens, NENHUM emoji.\n- NUNCA use emojis de símbolo/aviso (🚫, ⚠️, ❌, ✅, 🔔), de mãos (🙏, 🙌, 👏), nem decorativos (🌙, ✨, 💜, 💖, 🌟). Eles soam estranhos e fora de contexto.\n- Não comece toda mensagem com \"Oi!\". Evite repetir \"Que ótimo!\", \"Perfeito!\", \"Maravilha!\".\n- Não use o nome do cliente em toda mensagem — soa artificial. Use raramente.\n- Não dê explicações que ninguém pediu. Responda o que foi perguntado.\n- NUNCA invente preços, prazos ou informações. Fora do horário (seg-sex, 8h-17h), diga que retorna no próximo dia útil.\n\n### Primeira mensagem\nCumprimente, apresente-se e pergunte como pode ajudar. Sem oferecer catálogo nem listar produtos.\nEx.: \"Olá, tudo bem? Aqui é a Tati, da Loja Exemplo. Como posso ajudar?\"\n\n## CATÁLOGO DE IMAGENS — REGRA DE OURO\nNUNCA envie imagens por conta própria. Só quando o cliente PEDIR. Na dúvida, responda só com texto.\n\nRegra 1 — Catálogo `[CATALOGO]` (2 etapas):\n- Interesse genérico (\"quero conhecer\", \"queria ver o que vocês têm\"): responda só em texto, ex.: \"Posso te mostrar nosso catálogo de cascalhos, quer ver?\". NÃO envie [CATALOGO] ainda.\n- Cliente confirma (\"sim\", \"pode mandar\", \"quero\"): responda \"Aqui estão nossos cascalhos:\" e inclua [CATALOGO].\n- Atalho: se já pedir direto (\"me manda o catálogo\") → pode enviar [CATALOGO] na hora.\n\nRegra 2 — Imagem individual `[IMAGEM:xxx]`:\nSó quando o cliente perguntar sobre UM produto específico pela primeira vez (\"me mostra o ônix\", \"tem foto da concha?\"). Follow-up sobre produto já mostrado (\"e o preço?\") → só texto.\nTags:\n- [IMAGEM:cascalho_madre_marrom_24]\n- [IMAGEM:cascalho_dente_madre_marrom]\n- [IMAGEM:cascalho_dente_madre_natural]\n- [IMAGEM:cascalho_madre_concha]\n- [IMAGEM:cascalho_onix_preto]\n\nRegra 3 — Busca por cor/tom `[COR:palavra]`:\nQuando o cliente pedir por cor ou tonalidade (\"tem algo laranja?\", \"queria pedras vermelhas\", \"o que tem em verde?\", \"cor mais clara\", \"tons escuros\"), responda em texto curto (ex.: \"Deixa eu te mostrar o que temos nesse tom\") e inclua ao final [COR:palavra] — ex.: [COR:laranja], [COR:vermelho], [COR:escuro], [COR:claro]. O sistema acha sozinho as pedras dessa cor e das mais próximas e envia as fotos. Não liste produtos nem invente cores; só dispare a tag.\n\nAs legendas das fotos já trazem nome, preço e pedido mínimo — não repita essas informações em texto depois.\n\n## FECHAMENTO DO PEDIDO (triagem)\nQuando o cliente decidir comprar (informar produto e/ou quantidade, ex.: \"quero 1000 fios do ônix\"), você precisa de 3 dados para registrar o pedido. Peça os TRÊS DE UMA VEZ, numa única mensagem curta, mais ou menos assim:\n\n\"Antes de fechar seu pedido, preciso de alguns dados:\n- Nome completo\n- Cidade\n- CNPJ\n\nEssas informações são só para conseguir te atender e enviar o pedido corretamente.\"\n\nRegras da triagem:\n- Peça os três numa mensagem só. NUNCA faça uma pergunta por mensagem.\n- Coloque a frase \"Essas informações são só para...\" UMA única vez, no fim dessa mensagem. Não fique explicando o porquê em toda mensagem.\n- NÃO pergunte ramo/tipo de negócio (joalheiro, artesão, loja etc.). Só o CNPJ.\n- A quantidade é o que o cliente pediu para ESTE pedido. NÃO pergunte \"volume mensal\" nem assuma que é recorrente. Só trate como recorrente se o cliente disser claramente (ex.: \"todo mês\").\n\nDepois que o cliente enviar os dados, confirme o pedido em uma linha:\n\"Fechando então: [quantidade] de [produto], certo?\"\nQuando o cliente confirmar (\"sim\", \"isso\", \"pode fechar\", \"confirmo\"), responda algo curto e natural (ex.: \"Anotado! Nosso time entra em contato para finalizar.\") e inclua ao final, EXATAMENTE (JSON válido, aspas duplas, sem vírgula sobrando):\n[LEAD:{\"nome\":\"NOME\",\"cidade\":\"CIDADE\",\"cnpj\":\"CNPJ\",\"produto\":\"PRODUTO\",\"quantidade\":\"QUANTIDADE\"}]\n\nREGRAS DO LEAD (siga à risca):\n- Só emita [LEAD] quando já tiver os cinco: nome, cidade, cnpj, produto e quantidade. Faltando qualquer um, NÃO emita nada.\n- Emita [LEAD] UMA ÚNICA VEZ na conversa, no fim, após a confirmação. Se já emitiu (está no histórico), nunca repita.\n- Nunca emita [LEAD] a cada dado que o cliente manda.\n\n## TRANSFERÊNCIA PARA HUMANO\nSe o cliente pedir atendente, digitar *ATENDENTE*, tiver dúvida de preço/negociação que você não pode resolver, ou demonstrar frustração:\n- Responda: \"Vou te encaminhar para um de nossos atendentes, em breve alguém fala com você.\"\n- Inclua ao final: [TRANSFERIR]\n\n## PESQUISA DE SATISFAÇÃO (no fim da conversa)\nDispare [PESQUISA] quando a conversa estiver terminando:\n- logo após o [LEAD] (pode usar as duas tags na mesma mensagem)\n- cliente agradecer (obrigado, valeu)\n- cliente se despedir (tchau, até mais)\n- cliente disser que era só isso\nComo: uma linha curta (ex.: \"Antes de encerrarmos, posso te pedir uma avaliação rápida do atendimento?\") e inclua [PESQUISA] ao final.\nO sistema anexa sozinho as opções de nota e o atalho ATENDENTE — não escreva as opções.\nDispare [PESQUISA] só UMA vez por conversa.\n\n## RECEBENDO A AVALIAÇÃO\nQuando o cliente responder com uma nota (1 a 5, sozinha ou em frase como \"nota 4\"):\nAgradeça em UMA linha curta, natural e SEM emoji:\n- Nota 4 ou 5: \"Obrigada pela avaliação! Qualquer coisa, estou à disposição.\"\n- Nota 3: \"Obrigada pelo retorno, vou repassar ao time para melhorarmos.\"\n- Nota 1 ou 2: \"Sinto muito que a experiência não tenha sido boa. Vou pedir para um atendente falar com você.\" (e adicione [TRANSFERIR])\nInclua ao final: [AVALIACAO:N] (N = a nota de 1 a 5).\nEx.: cliente \"5\" → \"Obrigada pela avaliação! Qualquer coisa, estou à disposição. [AVALIACAO:5]\"\nNão escreva textos longos de agradecimento nem repita o nome do cliente. Uma linha basta.\nSe o cliente digitar *ATENDENTE* na pesquisa, use [TRANSFERIR] (sem [AVALIACAO]).\n\n## PREÇOS E PEDIDO MÍNIMO (só cite se perguntarem; a legenda da foto já mostra)\n- Cascalho 24 Madre Pérola Marrom — R$ XX / 10 fios · mínimo 200 fios\n- Cascalho Dente de Madre Pérola Marrom — R$ XX / 10 fios · mínimo 300 fios\n- Cascalho Dente de Madre Pérola Natural — R$ XX / 10 fios · mínimo 120 fios\n- Cascalho Madre Pérola Concha — R$ XX / 10 fios · mínimo 250 fios\n- Cascalho Ônix Preto — R$ XX / 10 fios · mínimo 400 fios\nPara os demais cascalhos, o preço aparece na legenda da foto. Nunca invente preço.\n\nNome do cliente: {{ $('Edit Fields1').item.json.NomePessoa }}\nData e hora atual: {{ $now }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -5728,
+        8976
+      ],
+      "id": "7aa84df2-ba15-4ed0-997a-682a32a462f3",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Edit Fields1').item.json.From }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        -5600,
+        9184
+      ],
+      "id": "ae4e1972-ea0f-47d9-b862-b05507359d7a",
+      "name": "Redis Chat Memory1",
+      "credentials": {
+        "redis": {
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "maxTokensToSample": 1024,
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -5744,
+        9168
+      ],
+      "id": "6b0933fb-2b6b-4616-ba47-34f19cf8042a",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $('AI Agent1').item.json.output || '';\nconst ef = $('Edit Fields1').item.json;\n\nconst leadMatch = output.match(/\\[LEAD:([\\s\\S]*?)\\]/);\nlet leadData = null;\nif (leadMatch) {\n  let raw = leadMatch[1].trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();\n  try { leadData = JSON.parse(raw); }\n  catch (e) {\n    try { leadData = JSON.parse(raw.replace(/,\\s*}/g, '}').replace(/[“”]/g, '\"').replace(/'/g, '\"')); }\n    catch (e2) { leadData = null; }\n  }\n}\n\nconst camposLead = ['nome','cidade','cnpj','produto','quantidade'];\nconst leadCompleto = !!(leadData && camposLead.every(k => leadData[k] && String(leadData[k]).trim() !== ''));\n\nconst hasHandoff = output.includes('[TRANSFERIR]');\nconst hasCatalogo = output.includes('[CATALOGO]');\nconst hasPesquisa = output.includes('[PESQUISA]');\n\nconst avaliacaoMatch = output.match(/\\[AVALIACAO:\\s*([1-5])\\s*\\]/);\nconst notaAvaliacao = avaliacaoMatch ? parseInt(avaliacaoMatch[1], 10) : null;\nconst hasAvaliacao = notaAvaliacao !== null;\n\nconst corMatch = output.match(/\\[COR:([^\\]]+)\\]/);\nconst corSolicitada = corMatch ? corMatch[1].trim() : null;\nconst hasCor = corSolicitada !== null;\n\nconst imagemMatch = output.match(/\\[IMAGEM:([^\\]]+)\\]/);\nconst imagemTipo = imagemMatch ? imagemMatch[1].trim() : null;\n\n// Cascalhos que aparecem no [CATALOGO] (destaques). Tudo é puxado da planilha pelo id.\nconst DESTAQUES = ['cascalho_madre_marrom_24','cascalho_dente_madre_marrom','cascalho_dente_madre_natural','cascalho_madre_concha','cascalho_onix_preto'];\nlet idsParaEnviar = [];\nif (hasCatalogo) idsParaEnviar = DESTAQUES;\nelse if (imagemTipo) idsParaEnviar = [imagemTipo];\n\nlet cleanMessage = output\n  .replace(/\\[LEAD:[\\s\\S]*?\\]/g, '')\n  .replace(/\\[TRANSFERIR\\]/g, '')\n  .replace(/\\[IMAGEM:[^\\]]+\\]/g, '')\n  .replace(/\\[CATALOGO\\]/g, '')\n  .replace(/\\[COR:[^\\]]+\\]/g, '')\n  .replace(/\\[PESQUISA\\]/g, '')\n  .replace(/\\[AVALIACAO:\\s*[1-5]\\s*\\]/g, '')\n  .trim();\n\nif (hasPesquisa) {\n  const blocoPesquisa = \"\\n\\n*Como você avalia seu atendimento, de 1 a 5?*\\n\\n1 - Muito ruim\\n2 - Ruim\\n3 - Regular\\n4 - Bom\\n5 - Excelente\\n\\nSe preferir falar com um atendente, digite ATENDENTE.\";\n  cleanMessage = cleanMessage + blocoPesquisa;\n}\n\nreturn [{\n  json: {\n    cleanMessage,\n    hasHandoff,\n    hasLead: leadCompleto,\n    leadData,\n    hasImagem: idsParaEnviar.length > 0,\n    idsParaEnviar,\n    hasPesquisa,\n    hasAvaliacao,\n    notaAvaliacao,\n    From: ef.From,\n    Instance: ef.Instance,\n    MensagemID: ef.MensagemID,\n    NomePessoa: ef.NomePessoa,\n    MensagemCliente: ef.Mensagem,\n    hasCor,\n    corSolicitada\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5408,
+        8960
+      ],
+      "id": "c283e542-e8f8-4cfa-bb9e-784f6bff0a40",
+      "name": "Processar Saída AI1"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $json.Instance }}",
+        "remoteJid": "={{ $json.From }}",
+        "messageText": "={{ $json.cleanMessage }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -5152,
+        8768
+      ],
+      "id": "7b59c44c-71c6-4733-8372-97ce28795cbf",
+      "name": "Enviar texto1",
+      "credentials": {
+        "evolutionApi": {
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "l1111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ $json.hasLead }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5152,
+        8960
+      ],
+      "id": "d643cb7b-fbf2-4b54-a6b2-15be619a4c41",
+      "name": "IF Lead1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "ID_DA_SUA_PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data": "={{ $now.toFormat('dd/MM/yyyy HH:mm') }}",
+            "Nome": "={{ $json.leadData.nome }}",
+            "Cidade": "={{ $json.leadData.cidade }}",
+            "CNPJ": "={{ $json.leadData.cnpj }}",
+            "Produto": "={{ $json.leadData.produto }}",
+            "Quantidade": "={{ $json.leadData.quantidade }}",
+            "WhatsApp": "={{ $json.From.replace('@s.whatsapp.net', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cidade",
+              "displayName": "Cidade",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CNPJ",
+              "displayName": "CNPJ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Produto",
+              "displayName": "Produto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantidade",
+              "displayName": "Quantidade",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WhatsApp",
+              "displayName": "WhatsApp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4928,
+        8960
+      ],
+      "id": "d40a424f-c4ec-4fc7-b20a-85e95debd730",
+      "name": "Salvar Lead1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "h1111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ $json.hasHandoff }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5152,
+        9152
+      ],
+      "id": "dc1ec90d-7cd1-4c5a-82c3-7ec61e151ed5",
+      "name": "IF Handoff1"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $json.Instance }}",
+        "remoteJid": "NUMERO_ADMIN@s.whatsapp.net",
+        "messageText": "=⚠️ *Transferência solicitada!*\n\n👤 Cliente: {{ $json.NomePessoa }}\n📱 WhatsApp: {{ $json.From.replace('@s.whatsapp.net', '') }}\n🕒 {{ $now.toFormat('dd/MM/yyyy HH:mm') }}\n\nCliente aguarda atendimento humano.",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -4928,
+        9152
+      ],
+      "id": "f9d916b8-a2e7-4c8d-b4f4-61c2d98aa7f3",
+      "name": "Notificar Admin1",
+      "credentials": {
+        "evolutionApi": {
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "i1111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ $json.hasImagem }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5152,
+        9344
+      ],
+      "id": "8332e3fd-b404-48e8-b147-7c21f902e006",
+      "name": "IF Imagem1"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "={{ $json.Instance }}",
+        "remoteJid": "={{ $json.numero }}",
+        "media": "={{ $json.url }}",
+        "caption": "={{ $json.caption }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -4640,
+        9344
+      ],
+      "id": "9392374f-25fc-43fb-a6eb-cdf9276f3e2e",
+      "name": "Enviar Imagem Catálogo1",
+      "credentials": {
+        "evolutionApi": {
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "av111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ $json.hasAvaliacao }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5152,
+        9536
+      ],
+      "id": "6653b47e-ae17-4b6f-8277-c5f88d071d58",
+      "name": "IF Avaliacao"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "ID_DA_SUA_PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pesquisa",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data": "={{ $now.toFormat('dd/MM/yyyy HH:mm') }}",
+            "Nome": "={{ $json.NomePessoa }}",
+            "WhatsApp": "={{ $json.From.replace('@s.whatsapp.net', '') }}",
+            "Nota": "={{ $json.notaAvaliacao }}",
+            "Comentario": "={{ $json.MensagemCliente }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WhatsApp",
+              "displayName": "WhatsApp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nota",
+              "displayName": "Nota",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Comentario",
+              "displayName": "Comentario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4928,
+        9536
+      ],
+      "id": "9962ad85-f908-4f46-9364-c2b39fff7a97",
+      "name": "Salvar Pesquisa",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m1111111-1111-1111-1111-111111111111",
+              "name": "RespostaMidia",
+              "value": "={{ $('Edit Fields1').item.json.TipoMensagem === 'audio' ? 'Olá! No momento não consigo processar áudios 🎵 Pode digitar sua mensagem? Assim consigo te ajudar melhor!' : $('Edit Fields1').item.json.TipoMensagem === 'image' ? 'Olá! No momento não consigo analisar imagens 🖼️ Pode descrever o que precisa? Fico feliz em ajudar!' : $('Edit Fields1').item.json.TipoMensagem === 'document' ? 'Recebi seu documento! Para análises detalhadas, envie para [E-MAIL] 📧' : 'Olá! No momento só consigo responder mensagens de texto 😊 Pode digitar sua dúvida?' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5936,
+        9360
+      ],
+      "id": "d565f187-b985-4f40-8214-9e91cb007f8a",
+      "name": "Resposta Mídia1"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $('Edit Fields1').item.json.Instance }}",
+        "remoteJid": "={{ $('Edit Fields1').item.json.From }}",
+        "messageText": "={{ $json.RespostaMidia }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -5632,
+        9360
+      ],
+      "id": "3806af2d-0e4e-43cb-9fb3-f95ecc538db8",
+      "name": "Enviar Resposta Mídia1",
+      "credentials": {
+        "evolutionApi": {
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURAÇÃO INICIAL\n\n### 1. 🟢 Evolution API — já configurada\n### 2. ⚡ Groq — **configurar credencial**\nCriar credencial **Groq API** no n8n com a chave de console.groq.com (grátis, sem cartão).\nModelo já setado: Llama 3.3 70B Versatile.\n### 3. 🔴 Redis — já configurada\n### 4. 🟡 Google Sheets — já configurada\n\n### 5. 🔔 Admin WhatsApp\n**Nó Notificar Admin:** substituir `NUMERO_ADMIN@s.whatsapp.net`\n\n### 6. 📸 Imagens\nJá configuradas no código.\n\n### 7. 📋 NOVO — Pesquisa de Satisfação\n**Criar aba `Pesquisa` na planilha** com as colunas:\n- Data · Nome · WhatsApp · Nota · Comentario\n\nA IA dispara a pesquisa quando a conversa está terminando. Cliente responde com nota 1-5 ou digita *ATENDENTE* pra falar com humano.",
+        "height": 600,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -6640,
+        9200
+      ],
+      "id": "38e00e84-8e6a-463e-881d-02e1bf225277",
+      "name": "Sticky Note CONFIG"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "co111111-1111-1111-1111-111111111111",
+              "leftValue": "={{ $json.hasCor }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5152,
+        9728
+      ],
+      "id": "aa111111-1111-1111-1111-1111111111aa",
+      "name": "IF Cor"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "ID_DA_SUA_PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Catalogo Loja Exemplo",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4928,
+        9728
+      ],
+      "id": "bb111111-1111-1111-1111-1111111111bb",
+      "name": "Ler Catálogo",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// === MATCH DE COR — nó \"Match Cor\" (Code, \"Run Once for All Items\") ===\n// Entrada: linhas da aba Catálogo (Google Sheets) em $input.all()\n// Cor pedida + dados do cliente: vêm do nó \"Processar Saída AI1\"\n// Saída: 1 item por produto escolhido, já no formato do nó de envio de imagem.\n\nconst ctx = $('Processar Saída AI1').first().json;\nconst corPedida = (ctx.corSolicitada || '').toString();\nconst numero = (ctx.From || '').replace('@s.whatsapp.net', '');\nconst Instance = ctx.Instance;\n\nconst MAX_RESULTADOS = 4;\nconst LIMITE_GRAUS = 85; // só considera \"cor próxima\" até ~85° no círculo de matiz\n\n// --- normalização de texto (remove acentos, minúsculo) ---\nfunction norm(s) {\n  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();\n}\n\n// --- matiz de referência por família cromática (0-360) ---\nconst FAMILIA_HUE = {\n  vermelho: 0, laranja: 30, amarelo: 55, verde: 120,\n  ciano: 180, azul: 215, roxo: 275, rosa: 330, marrom: 28,\n};\nconst NEUTRAS = new Set(['branco', 'preto', 'cinza', 'bege', 'marrom', 'dourado', 'prata', 'transparente', 'multicolor']);\n\n// --- dicionário palavra -> família (1ª ocorrência vence) ---\nconst SINONIMOS = {\n  vermelho: ['vermelho', 'vermelha', 'rubro', 'escarlate', 'carmim', 'vinho', 'bordo', 'rubi', 'cereja', 'sangue', 'goiaba'],\n  laranja: ['laranja', 'alaranjado', 'laranjado', 'coral', 'ferrugem', 'terracota', 'ambar', 'tangerina', 'salmao', 'pessego', 'damasco', 'abobora'],\n  amarelo: ['amarelo', 'amarela', 'mostarda', 'canario', 'citrino', 'limao', 'gema', 'milho'],\n  verde: ['verde', 'esmeralda', 'jade', 'oliva', 'musgo', 'menta', 'lima', 'militar', 'agua'],\n  ciano: ['ciano', 'turquesa', 'aquamarine', 'tiffany'],\n  azul: ['azul', 'marinho', 'royal', 'anil', 'indigo', 'celeste', 'cobalto', 'safira'],\n  roxo: ['roxo', 'roxa', 'violeta', 'lilas', 'lavanda', 'purpura', 'ametista', 'uva', 'berinjela'],\n  rosa: ['rosa', 'pink', 'magenta', 'fucsia', 'rose', 'rosado'],\n  marrom: ['marrom', 'castanho', 'cafe', 'chocolate', 'caramelo', 'tabaco', 'sepia', 'terra', 'cobre', 'bronze', 'noz', 'madeira'],\n  bege: ['bege', 'creme', 'nude', 'areia', 'cru', 'natural', 'champagne', 'champanhe', 'marfim', 'offwhite'],\n  branco: ['branco', 'branca', 'perola', 'nacarado', 'neve', 'gelo'],\n  preto: ['preto', 'preta', 'negro', 'onix'],\n  cinza: ['cinza', 'chumbo', 'grafite', 'fume'],\n  dourado: ['dourado', 'dourada', 'ouro', 'gold'],\n  prata: ['prata', 'prateado', 'prateada', 'silver'],\n  transparente: ['transparente', 'cristal', 'incolor', 'translucido'],\n  multicolor: ['colorido', 'colorida', 'multicolor', 'mix', 'variado', 'sortido', 'arcoiris'],\n};\n\n// dicionário plano palavra -> família\nconst PALAVRA_FAMILIA = {};\nfor (const [fam, palavras] of Object.entries(SINONIMOS)) {\n  for (const p of palavras) if (!(p in PALAVRA_FAMILIA)) PALAVRA_FAMILIA[p] = fam;\n}\n\n// adjacência entre neutras (pra \"branco\" também sugerir bege/pérola etc.)\nconst NEUTRA_VIZINHAS = {\n  branco: ['branco', 'bege', 'prata', 'transparente'],\n  bege: ['bege', 'branco', 'marrom', 'dourado'],\n  marrom: ['marrom', 'bege', 'dourado'],\n  preto: ['preto', 'cinza'],\n  cinza: ['cinza', 'preto', 'prata'],\n  dourado: ['dourado', 'bege', 'amarelo', 'prata'],\n  prata: ['prata', 'cinza', 'branco'],\n  transparente: ['transparente', 'branco'],\n  multicolor: ['multicolor'],\n};\n\n// --- detecta família a partir do texto do cliente ---\nfunction familiaDoTexto(txt) {\n  const tokens = norm(txt).split(/[^a-z]+/).filter(Boolean);\n  for (const t of tokens) if (PALAVRA_FAMILIA[t]) return PALAVRA_FAMILIA[t];\n  // tenta casar palavra composta (ex: \"verde agua\")\n  const limpo = norm(txt).replace(/[^a-z]+/g, '');\n  for (const [p, fam] of Object.entries(PALAVRA_FAMILIA)) if (limpo.includes(p)) return fam;\n  return null;\n}\n\n// --- detecta intenção de CLARIDADE (claro/escuro), quando não há cor específica ---\nconst PALAVRAS_CLARO = ['claro', 'clara', 'claros', 'claras', 'clarinho', 'clarinha', 'clarinhos', 'clarinhas', 'claras', 'light', 'suave', 'suaves', 'pastel'];\nconst PALAVRAS_ESCURO = ['escuro', 'escura', 'escuros', 'escuras', 'dark', 'fechado', 'fechada', 'fechados', 'fechadas'];\nfunction intencaoLuz(txt) {\n  const tokens = norm(txt).split(/[^a-z]+/).filter(Boolean);\n  if (tokens.some(t => PALAVRAS_ESCURO.includes(t))) return 'escuro';\n  if (tokens.some(t => PALAVRAS_CLARO.includes(t))) return 'claro';\n  return null;\n}\n\n// --- hex -> HSL (retorna {h,s,l} ou null) ---\nfunction hexParaHsl(hex) {\n  if (!hex) return null;\n  const m = norm(hex).match(/[0-9a-f]{6}/);\n  if (!m) return null;\n  const n = parseInt(m[0], 16);\n  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;\n  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;\n  let h = 0;\n  if (d !== 0) {\n    if (max === r) h = ((g - b) / d) % 6;\n    else if (max === g) h = (b - r) / d + 2;\n    else h = (r - g) / d + 4;\n    h *= 60; if (h < 0) h += 360;\n  }\n  const l = (max + min) / 2;\n  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));\n  return { h, s, l };\n}\n\n// distância circular de matiz (0-180)\nfunction distHue(a, b) {\n  const d = Math.abs(a - b) % 360;\n  return d > 180 ? 360 - d : d;\n}\n\n// --- monta a legenda da imagem ---\nfunction caption(row) {\n  const nome = row.nome || row.id;\n  const cor = row.cor_descricao ? `\\n${row.cor_descricao}` : '';\n  const preco = Number(String(row.preco).replace(',', '.')) || 0;\n  const linhaPreco = preco > 0\n    ? `\\n💰 R$ ${preco} / ${row.unidade || 'fio'} · pedido mínimo ${row.moq || '-'}`\n    : '';\n  return `🪨 *${nome}*${cor}${linhaPreco}`;\n}\n\nfunction urlImagem(id) {\n  return `https://drive.google.com/uc?export=download&id=${String(id).trim()}`;\n}\n\n// === seleção ===\nconst linhas = $input.all()\n  .map(i => i.json)\n  .filter(r => r && r.image_id && String(r.ativo || 'sim').toLowerCase() !== 'nao'\n            && !String(r.image_id).includes('COLE_O_ID'));\n\nconst famPedida = familiaDoTexto(corPedida);\nconst luz = !famPedida ? intencaoLuz(corPedida) : null;\nlet escolhidos = [];\n\nif (luz) {\n  // pedido por claridade (claro/escuro): ordena pela luminosidade do hex\n  const comHex = linhas.map(r => ({ r, hsl: hexParaHsl(r.hex) })).filter(x => x.hsl);\n  comHex.sort((a, b) => luz === 'escuro' ? a.hsl.l - b.hsl.l : b.hsl.l - a.hsl.l);\n  escolhidos = comHex.slice(0, MAX_RESULTADOS).map(x => x.r);\n} else if (famPedida && NEUTRAS.has(famPedida)) {\n  // pedido por cor neutra -> usa adjacência de neutras\n  const aceitas = new Set(NEUTRA_VIZINHAS[famPedida] || [famPedida]);\n  escolhidos = linhas\n    .filter(r => aceitas.has(norm(r.familia_cor || '')))\n    .slice(0, MAX_RESULTADOS);\n\n} else if (famPedida) {\n  // pedido por cor cromática -> ranqueia por proximidade de matiz\n  const alvo = FAMILIA_HUE[famPedida];\n  const ranqueado = linhas.map(r => {\n    const fam = norm(r.familia_cor || '');\n    const hsl = hexParaHsl(r.hex);\n    // confia na família declarada: neutro nunca entra em busca cromática.\n    let neutro = NEUTRAS.has(fam);\n    let hue;\n    if (!neutro) {\n      if (hsl && hsl.s > 0.12) hue = hsl.h;                          // hex refina o tom\n      else if (FAMILIA_HUE[fam] != null) hue = FAMILIA_HUE[fam];     // senão, matiz da família\n      else neutro = true;\n    }\n    let dist = neutro ? 999 : distHue(alvo, hue);\n    if (neutro && fam === 'marrom') dist = distHue(alvo, FAMILIA_HUE.marrom) + 40; // marrom = laranja apagado\n    return { r, dist };\n  }).sort((a, b) => a.dist - b.dist);\n\n  escolhidos = ranqueado.filter(x => x.dist <= LIMITE_GRAUS).slice(0, MAX_RESULTADOS).map(x => x.r);\n  if (escolhidos.length === 0 && ranqueado.length) escolhidos = [ranqueado[0].r]; // ao menos a mais próxima\n}\n\n// sem família reconhecida -> não envia imagem (o bot já respondeu em texto)\nif (escolhidos.length === 0) return [];\n\nreturn escolhidos.map(r => ({\n  json: { url: urlImagem(r.image_id), caption: caption(r), numero, Instance },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4704,
+        9728
+      ],
+      "id": "cc111111-1111-1111-1111-1111111111cc",
+      "name": "Match Cor"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "={{ $json.Instance }}",
+        "remoteJid": "={{ $json.numero }}",
+        "media": "={{ $json.url }}",
+        "caption": "={{ $json.caption }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -4480,
+        9728
+      ],
+      "id": "dd111111-1111-1111-1111-1111111111dd",
+      "name": "Enviar Imagem Cor",
+      "credentials": {
+        "evolutionApi": {
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "ID_DA_SUA_PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Catalogo Loja Exemplo",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4960,
+        9344
+      ],
+      "id": "ee111111-1111-1111-1111-1111111111ee",
+      "name": "Ler Catálogo Img",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Nó \"Montar Imagens\" (Code, \"Run Once for All Items\") ===\n// Monta as fotos de [CATALOGO] e [IMAGEM:x] a partir da aba Catalogo (Google Sheets).\n// Mesma legenda da busca por cor: nome + descrição + preço/pedido mínimo (sem telefone/site).\n\nconst ctx = $('Processar Saída AI1').first().json;\nconst ids = ctx.idsParaEnviar || [];\nconst numero = (ctx.From || '').replace('@s.whatsapp.net', '');\nconst Instance = ctx.Instance;\n\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r && r.image_id && String(r.ativo || 'sim').toLowerCase() !== 'nao');\nconst byId = {};\nrows.forEach(r => { byId[r.id] = r; });\n\nfunction caption(row) {\n  const nome = row.nome || row.id;\n  const cor = row.cor_descricao ? `\\n${row.cor_descricao}` : '';\n  const preco = Number(String(row.preco).replace(',', '.')) || 0;\n  const linhaPreco = preco > 0\n    ? `\\n💰 R$ ${preco} / ${row.unidade || 'fio'} · pedido mínimo ${row.moq || '-'}`\n    : '';\n  return `🪨 *${nome}*${cor}${linhaPreco}`;\n}\nfunction urlImagem(id) {\n  return `https://drive.google.com/uc?export=download&id=${String(id).trim()}`;\n}\n\n// preserva a ordem pedida em idsParaEnviar\nconst escolhidos = ids.map(id => byId[id]).filter(Boolean);\nif (!escolhidos.length) return [];\n\nreturn escolhidos.map(r => ({\n  json: { url: urlImagem(r.image_id), caption: caption(r), numero, Instance },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4800,
+        9344
+      ],
+      "id": "ff111111-1111-1111-1111-1111111111ff",
+      "name": "Montar Imagens"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "IF Filtrar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Filtrar1": {
+      "main": [
+        [
+          {
+            "node": "Marcar mensagens como lidas1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar mensagens como lidas1": {
+      "main": [
+        [
+          {
+            "node": "IF Tipo Mensagem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Tipo Mensagem1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta Mídia1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Processar Saída AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Saída AI1": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Lead1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Handoff1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Imagem1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Avaliacao",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Cor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Lead1": {
+      "main": [
+        [
+          {
+            "node": "Salvar Lead1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Handoff1": {
+      "main": [
+        [
+          {
+            "node": "Notificar Admin1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Imagem1": {
+      "main": [
+        [
+          {
+            "node": "Ler Catálogo Img",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Avaliacao": {
+      "main": [
+        [
+          {
+            "node": "Salvar Pesquisa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta Mídia1": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resposta Mídia1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Cor": {
+      "main": [
+        [
+          {
+            "node": "Ler Catálogo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler Catálogo": {
+      "main": [
+        [
+          {
+            "node": "Match Cor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Cor": {
+      "main": [
+        [
+          {
+            "node": "Enviar Imagem Cor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler Catálogo Img": {
+      "main": [
+        [
+          {
+            "node": "Montar Imagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Imagens": {
+      "main": [
+        [
+          {
+            "node": "Enviar Imagem Catálogo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

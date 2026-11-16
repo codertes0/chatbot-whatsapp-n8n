@@ -1,0 +1,5 @@
+id,nome,categoria,familia_cor,cor_descricao,hex,preco,unidade,moq,image_id,ativo
+pedra_onix_preto,Pedra Ônix Preto,pedras,preto,preto brilhante polido,#1C1C1C,12,10 fios,100 fios,ID_DA_FOTO_NO_DRIVE,sim
+pedra_agata_salmao,Pedra Ágata Salmão,pedras,laranja,salmão translúcido,#F2A07B,14,10 fios,150 fios,ID_DA_FOTO_NO_DRIVE,sim
+pedra_jade_verde,Pedra Jade Verde,pedras,verde,verde-claro leitoso,#7FB685,16,10 fios,100 fios,ID_DA_FOTO_NO_DRIVE,sim
+pedra_quartzo_rosa,Pedra Quartzo Rosa,pedras,rosa,rosa suave,#F4C2C2,11,10 fios,120 fios,ID_DA_FOTO_NO_DRIVE,nao
